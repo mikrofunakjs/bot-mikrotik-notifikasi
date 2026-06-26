@@ -1,15 +1,14 @@
 # =============================================================================
-#  bot-hotspot-mon — deteksi voucher hotspot login/logout
+#  bot-hotspot-mon — deteksi voucher login/logout
 # =============================================================================
-#  Cara pakai:
-#   Winbox → System → Scripts → Add (+)
-#     Name: bot-hotspot-mon
-#     Policy: read, write, policy, test
-#   Copy-paste isi di bawah ke kolom Source, OK.
-# =============================================================================
+#  Winbox: System → Scripts → Add (+)
+#    Name: bot-hotspot-mon
+#    Policy: read, write, policy, test
+#    Source: copy-paste isi file ini
 
+:global botToken
+:global botChatId
 :global botHotspotState
-:global botSend
 :if ([:typeof $botHotspotState] != "array") do={ :global botHotspotState [:toarray ""] }
 
 :local activeUsers [/ip hotspot active find]
@@ -26,7 +25,9 @@
 
     :if ([:typeof ($botHotspotState->$user)] = "nothing") do={
         :local msg "\F0\9F\9F\A2 <b>Hotspot Login</b>%0AUser: $user%0AServer: $server%0AIP: $address%0AMAC: $mac"
-        $botSend $msg
+        :local url "https://api.telegram.org/bot$botToken/sendMessage"
+        :local data "chat_id=$botChatId&text=$msg&parse_mode=HTML"
+        /tool fetch url="$url" http-method=post http-data="$data" mode=https keep-result=no
     }
 }
 
@@ -42,7 +43,9 @@
                 :local rest2 [:pick $rest1 ($p2 + 1) [:len $rest1]]
                 :local mac $rest2
                 :local msg "\F0\9F\94\B4 <b>Hotspot Logout</b>%0AUser: $user%0AIP: $address%0AMAC: $mac"
-                $botSend $msg
+                :local url "https://api.telegram.org/bot$botToken/sendMessage"
+                :local data "chat_id=$botChatId&text=$msg&parse_mode=HTML"
+                /tool fetch url="$url" http-method=post http-data="$data" mode=https keep-result=no
             }
         }
     }

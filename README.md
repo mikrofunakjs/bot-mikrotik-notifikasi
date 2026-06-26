@@ -1,14 +1,12 @@
-# 🤖 Bot Notifikasi MikroTik → Telegram
+# 🤖 Bot Notifikasi MikroTik → Telegram v2.0
 
 Bot notifikasi **satu arah** dari MikroTik ke Telegram. 100% berjalan di dalam RouterOS — **tanpa server, tanpa API eksternal, tanpa container**.
-
-Cukup copy-paste source script ke Winbox, atau import satu file `.rsc`.
 
 ---
 
 ## ✨ Fitur
 
-| Event | Status |
+| Event | Notifikasi |
 |---|---|
 | Hotspot voucher login / logout | 🟢 🔴 |
 | PPPoE client connect / disconnect | 🟢 🔴 |
@@ -17,15 +15,7 @@ Cukup copy-paste source script ke Winbox, atau import satu file `.rsc`.
 
 ---
 
-## 📋 Syarat
-
-- MikroTik RouterOS v6.45+ / v7+
-- Koneksi internet (router bisa resolve `api.telegram.org`)
-- Bot Telegram (bikin gratis via [@BotFather](https://t.me/BotFather))
-
----
-
-## 🚀 Install — Pilih Metode
+## 🚀 Cara Install
 
 ### Metode A: Import File (termudah)
 
@@ -34,63 +24,46 @@ Cukup copy-paste source script ke Winbox, atau import satu file `.rsc`.
    :global botToken "TOKEN_KAMU"
    :global botChatId "CHAT_ID_KAMU"
    ```
-2. **Upload** ke MikroTik: Winbox → Files → drag file `.rsc`
+2. **Upload** ke MikroTik: Winbox → Files → Upload (drag file `.rsc`)
 3. **Terminal**: `/import file=bot-mikrotik-telegram.rsc`
 4. Selesai.
 
-### Metode B: Winbox GUI (step-by-step, kalau import error)
+### Metode B: Winbox GUI (step-by-step)
 
-Buka Winbox → **System → Scripts**. Untuk setiap script di bawah, klik **Add (+)**:
+Buka Winbox → **System → Scripts**. Untuk setiap script klik **Add (+)**:
 
-#### Step 1: Ganti Token
-Buka file `scripts/01-bot-config.rsc` → ganti `botToken` dan `botChatId`.
-
-#### Step 2: Bikin 6 Script
-| # | Name | Source dari file | Policy |
+| # | Name | Source dari | Policy |
 |---|---|---|---|
 | 1 | `bot-config` | `scripts/01-bot-config.rsc` | read, write, policy, test |
-| 2 | `bot-send` | `scripts/02-bot-send.rsc` | read, write, policy, test |
-| 3 | `bot-hotspot-mon` | `scripts/03-bot-hotspot-mon.rsc` | read, write, policy, test |
-| 4 | `bot-pppoe-mon` | `scripts/04-bot-pppoe-mon.rsc` | read, write, policy, test |
-| 5 | `bot-iface-mon` | `scripts/05-bot-iface-mon.rsc` | read, write, policy, test |
-| 6 | `bot-startup` | `scripts/06-bot-startup.rsc` | read, write, policy, test |
+| 2 | `bot-hotspot-mon` | `scripts/02-bot-hotspot-mon.rsc` | read, write, policy, test |
+| 3 | `bot-pppoe-mon` | `scripts/03-bot-pppoe-mon.rsc` | read, write, policy, test |
+| 4 | `bot-iface-mon` | `scripts/04-bot-iface-mon.rsc` | read, write, policy, test |
+| 5 | `bot-startup` | `scripts/05-bot-startup.rsc` | read, write, policy, test |
 
-> **Caranya:** Buka file `.rsc`, copy SEMUA isinya, paste ke kolom **Source** di Winbox.
+> **Catatan:** `bot-config` harus diisi token & chat ID dulu. Script lain sudah inline — tidak ada ketergantungan antar-script.
 
-#### Step 3: Pasang Scheduler
-Buka **Terminal**, copy-paste satu per satu:
+### Pasang Scheduler
+
+Buka **Terminal**, copy satu per satu:
+
 ```
 /system scheduler add name="bot-hotspot-sched" interval=10s on-event="/system script run bot-hotspot-mon" start-time=startup
-
 /system scheduler add name="bot-pppoe-sched" interval=30s on-event="/system script run bot-pppoe-mon" start-time=startup
-
 /system scheduler add name="bot-iface-sched" interval=30s on-event="/system script run bot-iface-mon" start-time=startup
-
 /system scheduler add name="bot-startup-sched" start-time=startup on-event="/system script run bot-startup"
 ```
-
-Atau import: upload `scripts/setup-schedulers.rsc`, lalu `/import file=setup-schedulers.rsc`.
 
 ---
 
 ## ✅ Verifikasi
 
-**Terminal MikroTik:**
+Jalankan di terminal:
+
 ```
 /system script run bot-startup
 ```
 
-Cek Telegram — harus muncul notifikasi "Router Started".
-
-Cek semua script:
-```
-/system script print
-```
-
-Cek scheduler:
-```
-/system scheduler print
-```
+Cek Telegram — harus muncul "Router Started".
 
 ---
 
@@ -98,44 +71,41 @@ Cek scheduler:
 
 | Masalah | Solusi |
 |---|---|
-| "expected end of command" pas copy-paste | **Jangan paste ke terminal.** Pakai Winbox GUI (System → Scripts → Add) — paste ke kolom Source. |
-| Bot tidak kirim notifikasi | Cek `/log print` — cari error "bot-send" |
-| Gagal resolve api.telegram.org | `ping api.telegram.org` dari router |
-| Pesan tidak muncul di Telegram | Cek `botToken` dan `botChatId` — buka `/getUpdates` lagi |
-| "Router Started" muncul setelah reboot | Normal — state di-reset. Notifikasi hanya sekali. |
+| Pesan `$botSend` muncul di Telegram (bukan isi notifikasi) | **Kamu pakai versi lama.** Update semua script ke v2.0 (tarik ulang dari repo). |
+| Bot tidak kirim notifikasi | Run dulu `bot-config`: `/system script run bot-config` |
+| 404 Fetch failed | Token/chat ID salah. Cek: `:put $botToken` |
+| Setelah reboot tidak ada notifikasi | Cek scheduler: `startup-sched` harus jalan saat boot |
 
 ---
 
-## ⚙️ Kustomisasi
+## ⚙️ Arsitektur v2.0
 
-### Ganti interval polling
-```
-/system scheduler set bot-hotspot-sched interval=5s
-```
+Setiap script monitor **berdiri sendiri** — tidak ada fungsi, tidak ada `$botSend`, tidak ada cross-script call. Masing-masing langsung panggil `/tool fetch` ke Telegram API. Token & chat ID diambil dari variabel global (`$botToken`, `$botChatId`) yang diset oleh `bot-config`.
 
-### Stop monitor sementara
 ```
-/system scheduler disable bot-hotspot-sched,bot-pppoe-sched,bot-iface-sched
+bot-config ─── :global botToken, botChatId
+     │
+     ├── bot-hotspot-mon ─── /tool fetch (inline)
+     ├── bot-pppoe-mon    ─── /tool fetch (inline)
+     ├── bot-iface-mon    ─── /tool fetch (inline)
+     └── bot-startup      ─── /tool fetch (inline) + reset state
 ```
 
 ---
 
-## 📁 Struktur File
+## 📁 Struktur
 
 ```
-bot-mikrotik-notifikasi/
-├── bot-mikrotik-telegram.rsc       ← Import all-in-one
-├── scripts/                         ← Winbox GUI step-by-step
+├── bot-mikrotik-telegram.rsc     ← All-in-one import
+├── scripts/                       ← Winbox GUI per-script
 │   ├── 01-bot-config.rsc
-│   ├── 02-bot-send.rsc
-│   ├── 03-bot-hotspot-mon.rsc
-│   ├── 04-bot-pppoe-mon.rsc
-│   ├── 05-bot-iface-mon.rsc
-│   ├── 06-bot-startup.rsc
+│   ├── 02-bot-hotspot-mon.rsc
+│   ├── 03-bot-pppoe-mon.rsc
+│   ├── 04-bot-iface-mon.rsc
+│   ├── 05-bot-startup.rsc
 │   └── setup-schedulers.rsc
 ├── README.md
-├── LICENSE
-└── .gitignore
+└── LICENSE
 ```
 
 ---

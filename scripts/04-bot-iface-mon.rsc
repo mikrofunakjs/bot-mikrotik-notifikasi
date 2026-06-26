@@ -1,15 +1,14 @@
 # =============================================================================
 #  bot-iface-mon — deteksi interface up/down
 # =============================================================================
-#  Cara pakai:
-#   Winbox → System → Scripts → Add (+)
-#     Name: bot-iface-mon
-#     Policy: read, write, policy, test
-#   Copy-paste isi di bawah ke kolom Source, OK.
-# =============================================================================
+#  Winbox: System → Scripts → Add (+)
+#    Name: bot-iface-mon
+#    Policy: read, write, policy, test
+#    Source: copy-paste isi file ini
 
+:global botToken
+:global botChatId
 :global botIfaceState
-:global botSend
 :if ([:typeof $botIfaceState] != "array") do={ :global botIfaceState [:toarray ""] }
 
 :local interfaces [/interface find where dynamic=no]
@@ -26,10 +25,14 @@
         :if ($prevRunning != $running and [:typeof $prevRunning] != "nothing") do={
             :if ($running = true) do={
                 :local msg "\F0\9F\9F\A2 <b>Interface UP</b>%0AName: $name%0AType: $type"
-                $botSend $msg
+                :local url "https://api.telegram.org/bot$botToken/sendMessage"
+                :local data "chat_id=$botChatId&text=$msg&parse_mode=HTML"
+                /tool fetch url="$url" http-method=post http-data="$data" mode=https keep-result=no
             } else={
                 :local msg "\F0\9F\94\B4 <b>Interface DOWN</b>%0AName: $name%0AType: $type"
-                $botSend $msg
+                :local url "https://api.telegram.org/bot$botToken/sendMessage"
+                :local data "chat_id=$botChatId&text=$msg&parse_mode=HTML"
+                /tool fetch url="$url" http-method=post http-data="$data" mode=https keep-result=no
             }
         }
     }
