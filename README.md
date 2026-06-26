@@ -145,8 +145,6 @@ Bisa tambahkan script baru + scheduler untuk monitor `/system resource`:
 bot-mikrotik-telegram/
 ├── bot-mikrotik-telegram.rsc    ← File utama (import ke MikroTik)
 ├── README.md                     ← Dokumentasi ini
-├── .hermes/
-│   └── plans/                    ← Plan development
 └── LICENSE                       ← MIT
 ```
 
