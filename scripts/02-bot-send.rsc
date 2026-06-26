@@ -11,6 +11,8 @@
 :global botToken
 :global botChatId
 :global botSend do={
+    :global botToken
+    :global botChatId
     :local msg $0
     :local url "https://api.telegram.org/bot$botToken/sendMessage"
     :local data "chat_id=$botChatId&text=$msg&parse_mode=HTML"
